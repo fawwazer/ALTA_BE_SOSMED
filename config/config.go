@@ -76,7 +76,7 @@ func InitSQL(c AppConfig) *gorm.DB {
 		return nil
 	}
 
-	db.AutoMigrate(&user.User{}, &task.Task{})
+	db.AutoMigrate(&user.User{})
 
 	return db
 }
