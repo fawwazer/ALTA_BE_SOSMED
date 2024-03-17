@@ -5,8 +5,8 @@ import (
 	"ALTA_BE_SOSMED/features/user"
 
 	echojwt "github.com/labstack/echo-jwt/v4"
-
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
+	// "github.com/labstack/echo"
 )
 
 func InitRoute(c *echo.Echo, ct1 user.UserController) {

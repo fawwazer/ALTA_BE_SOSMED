@@ -7,7 +7,8 @@ import (
 	"ALTA_BE_SOSMED/features/user/services"
 	"ALTA_BE_SOSMED/routes"
 
-	"github.com/labstack/echo"
+	// "github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 

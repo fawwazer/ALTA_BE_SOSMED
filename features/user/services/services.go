@@ -45,7 +45,7 @@ func (s *service) Register(newData user.User) error {
 	}
 	newData.Password = newPassword
 
-	err = s.model.InsertUser(newData)
+	err = s.model.AddUser(newData)
 	if err != nil {
 		return errors.New(helper.ServerGeneralError)
 	}
