@@ -1,0 +1,258 @@
+openapi: 3.0.0
+info:
+  description: |
+    Open API untuk aplikasi sosial media 
+    tampilan agar mudah di pahami.
+  version: "1.0.0"
+  title: Open APi Sosial Media
+  contact:
+    name : "Kelompok empat"
+    email: "afadilah@gmail.com"
+    url: 'https://app.swaggerhub.com/apis/MuhammadFadilah/Sosial_Media/1.0.0'
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/MuhammadFadilah/Sosial_Media/1.0.0
+  - url: 'https://petstore.swagger.io/v2'
+tags:
+  - name: user
+    description: Organize for user
+paths:
+  /users:
+    post:
+      tags: 
+        - user
+      description: "register user"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+            example:
+              nama: "joko37"
+              email: "joko123@gmail.com"
+              password: "joko1234"
+              tgl_lahir: "2024-03-15"
+              gender: "Laki"
+              alamat: "Jakarta"
+        
+      responses:
+        '201':
+          description: "sukses menambahkan data"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDataResponse'
+        '400':
+          $ref: '#/components/responses/400'
+        '500':
+              $ref: '#/components/responses/500'
+    get:
+      tags: 
+        - user
+      security: 
+        - bearerAuth: []
+      description: "mendapatkan profile pengguna berdasarkan token"
+      responses:
+        '200':
+          description: "berhasil mendapatkan data"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDataResponse'
+              example: 
+                code: 200
+                message: "berhasil mendapatkan data"
+                data:
+                  nama: "joko37"
+                  email: "joko123@gmail.com"
+                  password: "joko1234"
+                  tgl_lahir: "2024-03-15"
+                  gender: "Laki"
+                  alamat: "Jakarta"
+                  
+        '500':
+              $ref: '#/components/responses/500'
+  /users/{email}:
+    put:
+      tags:
+        - user
+      parameters:
+         - in: path
+           name: email
+           required: true
+           schema:
+            type: string
+      security: 
+        - bearerAuth: []
+      summary: "update profile user"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: "behasil mengubah data"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDataResponse'
+              example: 
+                code : 200
+                message: "berhasil mengubah data"
+                data:
+                  nama: "joko37"
+                  email: "joko123@gmail.com"
+                  password: "joko1234"
+                  tgl_lahir: "2024-03-15"
+                  gender: "Laki"
+                  alamat: "Jakarta"
+        '400':
+          $ref: '#/components/responses/400'
+        '500':
+          $ref: '#/components/responses/500'
+    delete:
+      tags:
+        - user
+      summary: "Delete user"
+      description: "Deletes Email"
+      parameters:
+        - in: path
+          name: email
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: "behasil menghapus data"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDataResponse'
+        '500':
+          $ref: '#/components/responses/500'
+
+  /login:
+    post:
+      tags:
+        - user
+      summary: "login user"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      
+      responses:
+        '200':
+          description: "sukses login"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiDataResponse'
+              example: 
+                code: 200
+                message: "berhasil login"
+                data:
+                  nama: "joko37"
+                  email: "joko123@gmail.com"
+                  token: "aidjfaoidjhauanjer$oqwkofok"
+        '400':
+          $ref: '#/components/responses/400'
+        '500':
+          $ref: '#/components/responses/500'
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - nama
+        - email
+        - password
+        - tgl_lahir
+        - gender
+        - alamat
+      properties:
+        nama:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+        tgl_lahir:
+          type: string
+          format: date
+        gender:
+          type: string
+          format: gender
+        alamat:
+          type: string
+          format: alamat
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ApiDataResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        data:
+          type: object
+        message:
+          type: string
+  requestBodies:
+    User:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+      required: true
+    UserArray:
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/User'
+      description: List of user object
+      required: true
+  responses:
+    '400':
+      description: "input data kurang tepat"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+          example: 
+            code: 400
+            message: "terdapat kesalahan pada data input"
+    '500':
+      description: "server error"
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponse'
+  securitySchemes:
+    bearerAuth:            
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
