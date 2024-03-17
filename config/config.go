@@ -1,9 +1,11 @@
 package config
 
 import (
+	"ALTA_BE_SOSMED/features/user"
 	"fmt"
 	"os"
-	"os/user"
+
+	// "os/user"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"

@@ -43,7 +43,7 @@ type Register struct {
 	Nama      string `validate:"required,alpha"`
 	Email     string `validate:"required,email"`
 	Password  string `validate:"required,alphanum,min=8"`
-	Tgl_lahir string `validate:"required,date"`
-	Gender    string `validate:"required,gender"`
-	Alamat    string `validate:"required,alamat"`
+	Tgl_lahir string `validate:"required"`
+	Gender    string `validate:"required"`
+	Alamat    string `validate:"required"`
 }

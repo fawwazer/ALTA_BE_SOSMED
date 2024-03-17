@@ -41,7 +41,7 @@ func (um *UserModel) UpdateUser(email string, data user.User) error {
 
 func (um *UserModel) Login(email string) (user.User, error) {
 	var result user.User
-	if err := um.Connection.Where("Email = ? ", email).First(&result).Error; err != nil {
+	if err := um.Connection.Model(&User{}).Where("email = ? ", email).First(&result).Error; err != nil {
 		return user.User{}, err
 	}
 	return result, nil
