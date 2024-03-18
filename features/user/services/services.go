@@ -68,7 +68,7 @@ func (s *service) Login(loginData user.User) (user.User, string, error) {
 
 	err = s.pm.ComparePassword(loginValidate.Password, dbData.Password)
 	if err != nil {
-		return user.User{}, "", errors.New(helper.ServiceGeneralError)
+		return user.User{}, "", errors.New(helper.UserCredentialError)
 	}
 
 	token, err := middlewares.GenerateJWT(dbData.Email)
