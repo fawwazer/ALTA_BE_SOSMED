@@ -2,13 +2,19 @@ package services
 
 import (
 	"ALTA_BE_SOSMED/features/user"
+	
+	
 	"ALTA_BE_SOSMED/helper"
 	"ALTA_BE_SOSMED/middlewares"
 	"errors"
+	"io"
 	"log"
+	"mime/multipart"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
+	// "github.com/labstack/gommon/email"
 )
 
 type service struct {
@@ -27,6 +33,18 @@ func NewService(m user.UserModel) user.UserService {
 
 func (s *service) Register(newData user.User) error {
 	var registerValidate user.Register
+
+	// Mencari UserID terakhir dari database
+	lastUserID, error := s.model.GetLastUserID()
+	if error != nil {
+		return errors.New(helper.ServiceGeneralError)
+	}
+
+	// Menentukan UserID untuk pengguna baru
+	newUserID := lastUserID + 1
+	newData.UserID = newUserID
+
+	registerValidate.UserID = newData.UserID
 	registerValidate.Email = newData.Email
 	registerValidate.Nama = newData.Nama
 	registerValidate.Password = newData.Password
@@ -87,4 +105,43 @@ func (s *service) Profile(token *jwt.Token) (user.User, error) {
 		return user.User{}, err
 	}
 	return result, nil
+}
+
+// saveUploadedFile function to handle file uploads.
+func (s *service) SaveUploadedFile(file *multipart.FileHeader, path string) error {
+	// Open the uploaded file.
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	// Create a destination file for the uploaded content.
+	dst, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	// Copy the uploaded content to the destination file.
+	if _, err = io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) UploadPicture(userID int, pictureUrl string, token *jwt.Token) error {
+	email := middlewares.DecodeToken(token)
+	if email == "" {
+		log.Println("error decode token:", "token tidak ditemukan")
+		return errors.New("data tidak valid")
+	}
+
+	error := s.model.UploadPictureURL(userID, pictureUrl)
+	if error != nil {
+		return errors.New(helper.ServerGeneralError)
+	}
+
+	return nil
 }

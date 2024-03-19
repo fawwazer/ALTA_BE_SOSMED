@@ -54,3 +54,25 @@ func (um *UserModel) GetUserByEmail(email string) (user.User, error) {
 	}
 	return result, nil
 }
+
+func (um *UserModel) GetLastUserID() (int, error) {
+	var lastUser User
+
+	// Query untuk mendapatkan userID terakhir berdasarkan id terbesar
+	if err := um.Connection.Order("user_id desc").First(&lastUser).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			// Tabel kosong, return 0 sebagai userID pertama
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	return lastUser.UserID, nil
+}
+
+func (um *UserModel) UploadPictureURL(userID int, picture string) error {
+	if err := um.Connection.Model(&User{}).Where("user_id = ?", userID).Update("picture", picture).Error; err != nil {
+		return err
+	}
+	return nil
+}

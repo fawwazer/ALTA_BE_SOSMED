@@ -19,4 +19,7 @@ func userRoute(c *echo.Echo, ct1 user.UserController) {
 	c.GET("/profile", ct1.Profile(), echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte(config.JWTSECRET),
 	}))
+	c.POST("/profile/:user_id/upload", ct1.UploadPicture(), echojwt.WithConfig(echojwt.Config{
+		SigningKey: []byte(config.JWTSECRET),
+	}))
 }

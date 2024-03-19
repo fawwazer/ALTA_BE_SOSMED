@@ -4,6 +4,7 @@ import (
 	"ALTA_BE_SOSMED/features/user"
 	"ALTA_BE_SOSMED/helper"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -104,5 +105,54 @@ func (ct *controller) Profile() echo.HandlerFunc {
 
 		return c.JSON(http.StatusOK,
 			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", result))
+	}
+}
+
+func (ct *controller) UploadPicture() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userId, _ := strconv.ParseInt(c.Param("user_id"), 10, 32)
+
+		token, ok := c.Get("user").(*jwt.Token)
+		if !ok {
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		// Retrieve the uploaded file from the request.
+		file, err := c.FormFile("image")
+		if err != nil {
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
+		}
+
+		// Define the file path to save the uploaded image.
+		pathImage := "path/to/your/project-profile/picture" + file.Filename
+
+		// Save the uploaded file to the specified path.
+		if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		// Construct the URL for the saved picture.
+		baseURL := "http://localhost:8000"
+		pictureURL := baseURL + "/picture/" + file.Filename
+
+		// // Update the user's profile with the picture URL using the user service.
+		// if err := c.userService.UpdatePictureURL(userID, pictureURL); err != nil {
+		//    return e.JSON(http.StatusInternalServerError, &models.Response{
+		// 		Message: "Error uploading the cover image URL",
+		// 		Status:  false,
+		// 	})
+		// }
+
+		if err := ct.service.UploadPicture(int(userId), pictureURL, token); err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		return c.JSON(http.StatusOK,
+			helper.ResponseFormat(http.StatusOK, "Upload Photo Success", nil))
+
 	}
 }
