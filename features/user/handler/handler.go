@@ -147,23 +147,22 @@ func (ct *controller) UpdateProfile() echo.HandlerFunc {
 		baseURL := "http://localhost:8000"
 		pictureURL := baseURL + "/picture/" + file.Filename
 
-		var input user.User
-		err = c.Bind(&input)
+		nama := c.FormValue("nama")
+		email := c.FormValue("email")
+		gender := c.FormValue("gender")
+		tgl_lahir := c.FormValue("tgl_lahir")
+		
+		// convert string to bool
+		convertGender, err := strconv.ParseBool(gender)
 		if err != nil {
-			log.Println("error bind data:", err.Error())
-			if strings.Contains(err.Error(), "unsupport") {
-				return c.JSON(http.StatusUnsupportedMediaType,
-					helper.ResponseFormat(http.StatusUnsupportedMediaType, helper.UserInputFormatError, nil))
-			}
-			return c.JSON(http.StatusBadRequest,
-				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
-		}
+            log.Fatal(err)
+        }
 
 		var updateProcess user.User
-		updateProcess.Nama = input.Nama
-		updateProcess.Email = input.Email
-		updateProcess.Gender = input.Gender
-		updateProcess.Tgl_lahir = input.Tgl_lahir
+		updateProcess.Nama = nama
+		updateProcess.Email = email
+		updateProcess.Gender = convertGender
+		updateProcess.Tgl_lahir = tgl_lahir
 		updateProcess.Picture = pictureURL
 
 		if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
