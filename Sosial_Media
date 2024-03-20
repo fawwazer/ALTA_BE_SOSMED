@@ -38,7 +38,6 @@ paths:
               password: "joko1234"
               tgl_lahir: "2024-03-15"
               gender: "Laki"
-              alamat: "Jakarta"
 
       responses:
         '201':
@@ -78,8 +77,10 @@ paths:
                   password: "joko1234"
                   tgl_lahir: "2024-03-15"
                   gender: "Laki"
-                  alamat: "Jakarta"
-                  
+                  picture: "image/jpeg"
+                  post_id: 1
+                  comment_id: 1
+                    
         '500':
               $ref: '#/components/responses/500'
   /users/{email}:
@@ -107,7 +108,7 @@ paths:
                password: "joko1234"
                tgl_lahir: "2024-03-15"
                gender: "Laki"
-               alamat: "Jakarta"
+               picture: "image/jpeg"
       responses:
         '200':
           description: "berhasil mengubah data"
@@ -124,7 +125,6 @@ paths:
                   password: "joko1234"
                   tgl_lahir: "2024-03-15"
                   gender: "Laki"
-                  alamat: "Jakarta"
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -209,7 +209,7 @@ paths:
               $ref: '#/components/schemas/Posting'
             example:
               caption: "Kartoon"
-              picture: "https://kartoon.dora"
+              picture: "image/jpeg"
               
       responses:
         '201':
@@ -243,9 +243,10 @@ paths:
                 code: 200
                 message: "berhasil mendapatkan data"
                 data:
-                  user_id: 1
+                  post_id: 1
                   caption: "Kartoon"
-                  picture: "https://kartoon.dora"
+                  picture: "image/jpeg"
+                  pemilik: "joko123@gmail.com"
                   
         '500':
               $ref: '#/components/responses/500'
@@ -267,10 +268,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/Posting'
             example:
-              caption: "Anime"
-              picture: "https://anime.Goku"
+              caption: "Anime1"
+              picture: "image/png"
       responses:
         '200':
           description: "berhasil mengubah data"
@@ -283,7 +284,7 @@ paths:
                 message: "berhasil mengubah data"
                 data:
                   caption: "Anime"
-                  picture: "https://kartoon.Goku"
+                  picture: "image/jpeg"
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -360,9 +361,11 @@ paths:
                 code: 200
                 message: "berhasil mendapatkan data"
                 data:
+                  comment_id: 1
                   post_id: 1
                   content: "anime"
                   comment: "anime tampil dihari libur"
+                  pemilik: "joko123@gmail.com"
                   
         '500':
               $ref: '#/components/responses/500'  
@@ -387,7 +390,7 @@ paths:
               $ref: '#/components/schemas/User'
             example:
               caption: "Anime"
-              picture: "https://anime.Goku"
+              picture: "image/jpeg"
       responses:
         '200':
           description: "berhasil mengubah data"
@@ -400,7 +403,7 @@ paths:
                 message: "berhasil mengubah data"
                 data:
                   caption: "Anime"
-                  picture: "https://kartoon.Goku"
+                  picture: "image/jpeg"
         '400':
           $ref: '#/components/responses/400'
         '500':
@@ -439,6 +442,7 @@ components:
         - post_id
         - content
         - comment
+        - pemilik
       properties:
         post_id:
          type: integer
@@ -449,6 +453,9 @@ components:
         comment:
          type: string
          format: comment
+        pemilik:
+         type: string
+         format: pemilik
     Posting:
       type: object
       required:
@@ -473,7 +480,9 @@ components:
         - password
         - tgl_lahir
         - gender
-        - alamat
+        - picture
+        - post_id
+        - comment_id
       properties:
         nama:
           type: string
@@ -489,11 +498,14 @@ components:
           type: string
           format: date
         gender:
-          type: string
+          type: boolean
           format: gender
-        alamat:
+        picture:
           type: string
-          format: alamat
+          format: picture
+        post_id:
+          type: integer
+          format: post_id
     ApiResponse:
       type: object
       properties:
