@@ -2,6 +2,7 @@ package data
 
 import (
 	"ALTA_BE_SOSMED/features/user"
+	"log"
 
 	"gorm.io/gorm"
 )
@@ -70,8 +71,21 @@ func (um *UserModel) GetLastUserID() (int, error) {
 	return lastUser.UserID, nil
 }
 
-func (um *UserModel) UploadPictureURL(userID int, picture string) error {
-	if err := um.Connection.Model(&User{}).Where("user_id = ?", userID).Update("picture", picture).Error; err != nil {
+func (um *UserModel) Update(userID int, newData user.User) error {
+	if err := um.Connection.Model(&User{}).Where("user_id = ?", userID).Updates(&newData).Error; err != nil {
+		log.Print("error to database :", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (um *UserModel) Delete(userID uint) error {
+	// if err := um.Connection.Unscoped().Where("user_id = ?", userID).Delete(userID).Error; err != nil {
+	// 	log.Print("error to database :", err.Error())
+	// 	return err
+	// }
+	if err := um.Connection.Model(&User{}).Where("user_id = ?", userID).Delete(userID).Error; err != nil {
+		log.Print("error to database :", err.Error())
 		return err
 	}
 	return nil

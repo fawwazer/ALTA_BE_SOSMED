@@ -3,6 +3,7 @@ package handler
 import (
 	"ALTA_BE_SOSMED/features/user"
 	"ALTA_BE_SOSMED/helper"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -54,9 +55,11 @@ func (ct *controller) Login() echo.HandlerFunc {
 		err := c.Bind(&input)
 		if err != nil {
 			if strings.Contains(err.Error(), "unsupport") {
+				log.Print("error unsupport: ", err.Error())
 				return c.JSON(http.StatusUnsupportedMediaType,
 					helper.ResponseFormat(http.StatusUnsupportedMediaType, "format data tidak didukung", nil))
 			}
+			log.Print("error bad request input: ", err.Error())
 			return c.JSON(http.StatusBadRequest,
 				helper.ResponseFormat(http.StatusBadRequest, "data yang dikirmkan tidak sesuai", nil))
 		}
@@ -108,9 +111,13 @@ func (ct *controller) Profile() echo.HandlerFunc {
 	}
 }
 
-func (ct *controller) UploadPicture() echo.HandlerFunc {
+func (ct *controller) UpdateProfile() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		userId, _ := strconv.ParseInt(c.Param("user_id"), 10, 32)
+		userId, err := strconv.ParseInt(c.Param("user_id"), 10, 32)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
 
 		token, ok := c.Get("user").(*jwt.Token)
 		if !ok {
@@ -121,15 +128,17 @@ func (ct *controller) UploadPicture() echo.HandlerFunc {
 		// Retrieve the uploaded file from the request.
 		file, err := c.FormFile("image")
 		if err != nil {
+			log.Println("error form file: ", err.Error())
 			return c.JSON(http.StatusBadRequest,
 				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
 		}
 
 		// Define the file path to save the uploaded image.
-		pathImage := "path/to/your/project-profile/picture" + file.Filename
+		pathImage := "/Users/rizal/Alterra/ALTA_BE_SOSMED/picture/" + file.Filename
 
 		// Save the uploaded file to the specified path.
 		if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
+			log.Print("error save uploaded file: ", err.Error())
 			return c.JSON(http.StatusInternalServerError,
 				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
 		}
@@ -138,21 +147,59 @@ func (ct *controller) UploadPicture() echo.HandlerFunc {
 		baseURL := "http://localhost:8000"
 		pictureURL := baseURL + "/picture/" + file.Filename
 
-		// // Update the user's profile with the picture URL using the user service.
-		// if err := c.userService.UpdatePictureURL(userID, pictureURL); err != nil {
-		//    return e.JSON(http.StatusInternalServerError, &models.Response{
-		// 		Message: "Error uploading the cover image URL",
-		// 		Status:  false,
-		// 	})
-		// }
+		var input user.User
+		err = c.Bind(&input)
+		if err != nil {
+			log.Println("error bind data:", err.Error())
+			if strings.Contains(err.Error(), "unsupport") {
+				return c.JSON(http.StatusUnsupportedMediaType,
+					helper.ResponseFormat(http.StatusUnsupportedMediaType, helper.UserInputFormatError, nil))
+			}
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
 
-		if err := ct.service.UploadPicture(int(userId), pictureURL, token); err != nil {
+		var updateProcess user.User
+		updateProcess.Nama = input.Nama
+		updateProcess.Email = input.Email
+		updateProcess.Gender = input.Gender
+		updateProcess.Tgl_lahir = input.Tgl_lahir
+		updateProcess.Picture = pictureURL
+
+		if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
+			log.Print("error update profile: ", err.Error())
 			return c.JSON(http.StatusInternalServerError,
 				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
 		}
 
 		return c.JSON(http.StatusOK,
-			helper.ResponseFormat(http.StatusOK, "Upload Photo Success", nil))
+			helper.ResponseFormat(http.StatusOK, "Update Profile Success", nil))
 
+	}
+}
+
+func (ct *controller) DeleteAccount() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID, err := strconv.ParseUint(c.Param("user_id"), 10, 32)
+		if err != nil {
+			log.Println("error param:", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		token, ok := c.Get("user").(*jwt.Token)
+		if !ok {
+			log.Println("error token:", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		err = ct.service.DeleteAccount(uint(userID), token)
+		if err != nil {
+			log.Println("error insert db:", err.Error())
+			return c.JSON(http.StatusInternalServerError, helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		return c.JSON(http.StatusCreated, helper.ResponseFormat(http.StatusCreated, "berhasil menghapus akun", nil))
 	}
 }

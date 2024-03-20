@@ -2,8 +2,7 @@ package services
 
 import (
 	"ALTA_BE_SOSMED/features/user"
-	
-	
+
 	"ALTA_BE_SOSMED/helper"
 	"ALTA_BE_SOSMED/middlewares"
 	"errors"
@@ -50,7 +49,6 @@ func (s *service) Register(newData user.User) error {
 	registerValidate.Password = newData.Password
 	registerValidate.Tgl_lahir = newData.Tgl_lahir
 	registerValidate.Gender = newData.Gender
-	registerValidate.Alamat = newData.Alamat
 	err := s.v.Struct(&registerValidate)
 	if err != nil {
 		log.Println("error validasi", err.Error())
@@ -82,16 +80,19 @@ func (s *service) Login(loginData user.User) (user.User, string, error) {
 
 	dbData, err := s.model.Login(loginValidate.Email)
 	if err != nil {
+		log.Println("error login model", err.Error())
 		return user.User{}, "", err
 	}
 
 	err = s.pm.ComparePassword(loginValidate.Password, dbData.Password)
 	if err != nil {
+		log.Println("error compare", err.Error())
 		return user.User{}, "", errors.New(helper.UserCredentialError)
 	}
 
 	token, err := middlewares.GenerateJWT(dbData.Email)
 	if err != nil {
+		log.Println("error generate", err.Error())
 		return user.User{}, "", errors.New(helper.ServiceGeneralError)
 	}
 
@@ -112,6 +113,7 @@ func (s *service) SaveUploadedFile(file *multipart.FileHeader, path string) erro
 	// Open the uploaded file.
 	src, err := file.Open()
 	if err != nil {
+		log.Print("file open error :", err.Error())
 		return err
 	}
 	defer src.Close()
@@ -119,27 +121,52 @@ func (s *service) SaveUploadedFile(file *multipart.FileHeader, path string) erro
 	// Create a destination file for the uploaded content.
 	dst, err := os.Create(path)
 	if err != nil {
+		log.Print("file create error :", err.Error())
 		return err
 	}
 	defer dst.Close()
 
 	// Copy the uploaded content to the destination file.
 	if _, err = io.Copy(dst, src); err != nil {
+		log.Print("file copy error :", err.Error())
 		return err
 	}
 
 	return nil
 }
 
-func (s *service) UploadPicture(userID int, pictureUrl string, token *jwt.Token) error {
+func (s *service) UpdateProfile(userID int, token *jwt.Token, newData user.User) error {
 	email := middlewares.DecodeToken(token)
 	if email == "" {
 		log.Println("error decode token:", "token tidak ditemukan")
 		return errors.New("data tidak valid")
 	}
 
-	error := s.model.UploadPictureURL(userID, pictureUrl)
+	err := s.v.Struct(&newData)
+	if err != nil {
+		log.Println("error validasi", err.Error())
+		return err
+	}
+
+	error := s.model.Update(userID, newData)
 	if error != nil {
+		log.Print("error update to model: ", error.Error())
+		return errors.New(helper.ServerGeneralError)
+	}
+
+	return nil
+}
+
+func (s *service) DeleteAccount(userID uint, token *jwt.Token) error {
+	email := middlewares.DecodeToken(token)
+	if email == "" {
+		log.Println("error decode token:", "token tidak ditemukan")
+		return errors.New("data tidak valid")
+	}
+
+	error := s.model.Delete(userID)
+	if error != nil {
+		log.Print("error update to model: ", error.Error())
 		return errors.New(helper.ServerGeneralError)
 	}
 

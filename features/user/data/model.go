@@ -1,12 +1,11 @@
 package data
 
 type User struct {
-	UserID    int
+	UserID    int `gorm:"primaryKey"`
 	Nama      string
-	Email     string `gorm:"type:varchar(30);primaryKey"`
+	Email     string `gorm:"type:varchar(30);"`
 	Password  string
 	Picture   string
 	Tgl_lahir string
-	Gender    string
-	Alamat    string
+	Gender    bool
 }

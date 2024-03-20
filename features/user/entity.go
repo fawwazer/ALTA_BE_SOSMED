@@ -12,7 +12,8 @@ type UserController interface {
 	Add() echo.HandlerFunc
 	Login() echo.HandlerFunc
 	Profile() echo.HandlerFunc
-	UploadPicture() echo.HandlerFunc
+	UpdateProfile() echo.HandlerFunc
+	DeleteAccount() echo.HandlerFunc
 }
 
 type UserService interface {
@@ -20,7 +21,8 @@ type UserService interface {
 	Login(loginData User) (User, string, error)
 	Profile(token *jwt.Token) (User, error)
 	SaveUploadedFile(file *multipart.FileHeader, path string) error
-	UploadPicture(userID int, pictureUrl string, token *jwt.Token) error
+	UpdateProfile(userID int, token *jwt.Token, newData User) error
+	DeleteAccount(userID uint, token *jwt.Token) error
 }
 
 type UserModel interface {
@@ -29,7 +31,8 @@ type UserModel interface {
 	Login(email string) (User, error)
 	GetUserByEmail(email string) (User, error)
 	GetLastUserID() (int, error)
-	UploadPictureURL(userID int, picture string) error
+	Update(userID int, newData User) error
+	Delete(userID uint) error
 }
 
 type User struct {
@@ -39,8 +42,7 @@ type User struct {
 	Password  string
 	Picture   string
 	Tgl_lahir string
-	Gender    string
-	Alamat    string
+	Gender    bool
 }
 
 type Login struct {
@@ -54,6 +56,5 @@ type Register struct {
 	Email     string `validate:"required"`
 	Password  string `validate:"required,alphanum,min=8"`
 	Tgl_lahir string `validate:"required"`
-	Gender    string `validate:"required"`
-	Alamat    string `validate:"required,alphaunicode"`
+	Gender    bool   `validate:"required"`
 }
