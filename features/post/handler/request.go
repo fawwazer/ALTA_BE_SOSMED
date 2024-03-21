@@ -1,5 +1,6 @@
 package handler
 
 type PostRequest struct {
-	Posting string `json:"kegiatan" form:"kegiatan"`
+	Posting string `json:"posting" form:"posting"`
+	Picture string `json:"picture" form:"picture"`
 }

@@ -1,6 +1,8 @@
 package post
 
 import (
+	"mime/multipart"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 )
@@ -16,9 +18,11 @@ type PostModel interface {
 }
 
 type PostService interface {
-	AddPost(pemilik *jwt.Token, postingBaru Post) (Post, error)
+	AddPost(pemilik *jwt.Token, postingBaru Post, file *multipart.FileHeader) (Post, error)
+	SaveUploadedFile(file *multipart.FileHeader, path string) error
 }
 
 type Post struct {
 	Posting string
+	Picture string
 }

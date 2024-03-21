@@ -41,9 +41,36 @@ func (ct *controller) Add() echo.HandlerFunc {
 				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
 		}
 
+		// Retrieve the uploaded file from the request.
+		file, err := c.FormFile("image")
+		if err != nil && err != http.ErrMissingFile { // Check if error is not due to missing file
+			log.Println("error form file: ", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
+		}
+
+		var pictureURL string
+		if file != nil { // Check if file exists
+			// Define the file path to save the uploaded image.
+			pathImage := "/Users/user/ALTA_BE_SOSMED/picture" + file.Filename
+
+			// Save the uploaded file to the specified path.
+			if err := ct.s.SaveUploadedFile(file, pathImage); err != nil {
+				log.Print("error save uploaded file: ", err.Error())
+				return c.JSON(http.StatusInternalServerError,
+					helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+			}
+
+			// Construct the URL for the saved picture.
+			baseURL := "http://localhost:8000"
+			pictureURL = baseURL + "/picture/" + file.Filename
+		}
+
 		var inputProcess post.Post
 		inputProcess.Posting = input.Posting
-		result, err := ct.s.AddPost(token, inputProcess)
+		inputProcess.Picture = pictureURL // Assign picture URL to post data
+
+		result, err := ct.s.AddPost(token, inputProcess, file)
 		if err != nil {
 			log.Println("error insert db:", err.Error())
 			return c.JSON(http.StatusInternalServerError, helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))

@@ -1,6 +1,8 @@
 package data
 
-import "ALTA_BE_SOSMED/features/post"
+import (
+	"ALTA_BE_SOSMED/features/post/data"
+)
 
 type User struct {
 	UserID    int
@@ -10,5 +12,5 @@ type User struct {
 	Picture   string
 	Tgl_lahir string
 	Gender    bool
-	Posts     []post.Post `gorm:"foreignKey:Pemilik;references:Email"`
+	Posts     []data.Post `gorm:"foreignKey:Pemilik;references:Email"`
 }

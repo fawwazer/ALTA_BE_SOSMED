@@ -3,6 +3,7 @@ package handler
 import (
 	"ALTA_BE_SOSMED/features/user"
 	"ALTA_BE_SOSMED/helper"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 	// "github.com/labstack/echo"
 )
 
@@ -127,35 +129,40 @@ func (ct *controller) UpdateProfile() echo.HandlerFunc {
 
 		// Retrieve the uploaded file from the request.
 		file, err := c.FormFile("image")
-		if err != nil {
+		if err != nil && err != http.ErrMissingFile { // Check if error is not due to missing file
 			log.Println("error form file: ", err.Error())
 			return c.JSON(http.StatusBadRequest,
 				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
 		}
 
-		// Define the file path to save the uploaded image.
-		pathImage := "/Users/rizal/Alterra/ALTA_BE_SOSMED/picture/" + file.Filename
+		var pictureURL string
+		if file != nil { // Check if file exists
+			// Define the file path to save the uploaded image.
+			pathImage := "/Users/user/ALTA_BE_SOSMED/picture" + file.Filename
 
-		// Save the uploaded file to the specified path.
-		if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
-			log.Print("error save uploaded file: ", err.Error())
-			return c.JSON(http.StatusInternalServerError,
-				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+			// Save the uploaded file to the specified path.
+			if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
+				log.Print("error save uploaded file: ", err.Error())
+				return c.JSON(http.StatusInternalServerError,
+					helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+			}
+
+			// Construct the URL for the saved picture.
+			baseURL := "http://localhost:8000"
+			pictureURL = baseURL + "/picture/" + file.Filename
 		}
-
-		// Construct the URL for the saved picture.
-		baseURL := "http://localhost:8000"
-		pictureURL := baseURL + "/picture/" + file.Filename
 
 		nama := c.FormValue("nama")
 		email := c.FormValue("email")
 		gender := c.FormValue("gender")
 		tgl_lahir := c.FormValue("tgl_lahir")
 
+		log.Println(gender)
+
 		// convert string to bool
 		convertGender, err := strconv.ParseBool(gender)
 		if err != nil {
-			log.Fatal(err)
+			log.Print("err convert: ", err)
 		}
 
 		var updateProcess user.User
@@ -163,12 +170,24 @@ func (ct *controller) UpdateProfile() echo.HandlerFunc {
 		updateProcess.Email = email
 		updateProcess.Gender = convertGender
 		updateProcess.Tgl_lahir = tgl_lahir
-		updateProcess.Picture = pictureURL
+
+		if pictureURL != "" { // Update picture only if URL is not empty
+			updateProcess.Picture = pictureURL
+		}
+
+		log.Println(updateProcess.Gender)
 
 		if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
-			log.Print("error update profile: ", err.Error())
-			return c.JSON(http.StatusInternalServerError,
-				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+			log.Println("error update account:", err.Error())
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return c.JSON(http.StatusNotFound,
+					helper.ResponseFormat(http.StatusNotFound, "data tidak ditemukan", nil))
+			}
+			// Jika terjadi kesalahan lain selain "record not found",
+			// kembalikan respons forbidden
+			log.Println("error update profile:", err.Error())
+			return c.JSON(http.StatusForbidden,
+				helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
 		}
 
 		return c.JSON(http.StatusOK,

@@ -6,7 +6,7 @@ import (
 
 type Post struct {
 	gorm.Model
-	PicturePost string
-	Posting     string `gorm:type:text`
-	Pemilik     string
+	Picture string
+	Posting string `gorm:type:string`
+	Pemilik string `gorm:"type:varchar(30);"`
 }
