@@ -3,7 +3,9 @@ package handler
 import (
 	"ALTA_BE_SOSMED/features/user"
 	"ALTA_BE_SOSMED/helper"
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -53,9 +55,11 @@ func (ct *controller) Login() echo.HandlerFunc {
 		err := c.Bind(&input)
 		if err != nil {
 			if strings.Contains(err.Error(), "unsupport") {
+				log.Print("error unsupport: ", err.Error())
 				return c.JSON(http.StatusUnsupportedMediaType,
 					helper.ResponseFormat(http.StatusUnsupportedMediaType, "format data tidak didukung", nil))
 			}
+			log.Print("error bad request input: ", err.Error())
 			return c.JSON(http.StatusBadRequest,
 				helper.ResponseFormat(http.StatusBadRequest, "data yang dikirmkan tidak sesuai", nil))
 		}
@@ -104,5 +108,97 @@ func (ct *controller) Profile() echo.HandlerFunc {
 
 		return c.JSON(http.StatusOK,
 			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", result))
+	}
+}
+
+func (ct *controller) UpdateProfile() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userId, err := strconv.ParseInt(c.Param("user_id"), 10, 32)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		token, ok := c.Get("user").(*jwt.Token)
+		if !ok {
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		// Retrieve the uploaded file from the request.
+		file, err := c.FormFile("image")
+		if err != nil {
+			log.Println("error form file: ", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
+		}
+
+		// Define the file path to save the uploaded image.
+		pathImage := "/Users/rizal/Alterra/ALTA_BE_SOSMED/picture/" + file.Filename
+
+		// Save the uploaded file to the specified path.
+		if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
+			log.Print("error save uploaded file: ", err.Error())
+			return c.JSON(http.StatusInternalServerError,
+				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		// Construct the URL for the saved picture.
+		baseURL := "http://localhost:8000"
+		pictureURL := baseURL + "/picture/" + file.Filename
+
+		nama := c.FormValue("nama")
+		email := c.FormValue("email")
+		gender := c.FormValue("gender")
+		tgl_lahir := c.FormValue("tgl_lahir")
+
+		// convert string to bool
+		convertGender, err := strconv.ParseBool(gender)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		var updateProcess user.User
+		updateProcess.Nama = nama
+		updateProcess.Email = email
+		updateProcess.Gender = convertGender
+		updateProcess.Tgl_lahir = tgl_lahir
+		updateProcess.Picture = pictureURL
+
+		if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
+			log.Print("error update profile: ", err.Error())
+			return c.JSON(http.StatusInternalServerError,
+				helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		return c.JSON(http.StatusOK,
+			helper.ResponseFormat(http.StatusOK, "Update Profile Success", nil))
+
+	}
+}
+
+func (ct *controller) DeleteAccount() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		userID, err := strconv.ParseUint(c.Param("user_id"), 10, 32)
+		if err != nil {
+			log.Println("error param:", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		token, ok := c.Get("user").(*jwt.Token)
+		if !ok {
+			log.Println("error token:", err.Error())
+			return c.JSON(http.StatusBadRequest,
+				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		err = ct.service.DeleteAccount(uint(userID), token)
+		if err != nil {
+			log.Println("error insert db:", err.Error())
+			return c.JSON(http.StatusInternalServerError, helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
+		}
+
+		return c.JSON(http.StatusCreated, helper.ResponseFormat(http.StatusCreated, "berhasil menghapus akun", nil))
 	}
 }
