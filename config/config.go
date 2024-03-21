@@ -1,6 +1,7 @@
 package config
 
 import (
+	"ALTA_BE_SOSMED/features/post"
 	"ALTA_BE_SOSMED/features/user/data"
 	"fmt"
 	"os"
@@ -76,7 +77,7 @@ func InitSQL(c AppConfig) *gorm.DB {
 		return nil
 	}
 
-	db.AutoMigrate(&data.User{})
+	db.AutoMigrate(&data.User{}, &post.Post{})
 
 	return db
 }
