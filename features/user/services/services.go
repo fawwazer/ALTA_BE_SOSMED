@@ -81,7 +81,7 @@ func (s *service) Login(loginData user.User) (user.User, string, error) {
 	dbData, err := s.model.Login(loginValidate.Email)
 	if err != nil {
 		log.Println("error login model", err.Error())
-		return user.User{}, "", err
+		return user.User{}, "", errors.New(helper.UserCredentialError) //
 	}
 
 	err = s.pm.ComparePassword(loginValidate.Password, dbData.Password)
@@ -99,12 +99,22 @@ func (s *service) Login(loginData user.User) (user.User, string, error) {
 	return dbData, token, nil
 }
 
-func (s *service) Profile(token *jwt.Token) (user.User, error) {
+func (s *service) Profile(token *jwt.Token, userID uint) (user.User, error) {
 	decodeEmail := middlewares.DecodeToken(token)
-	result, err := s.model.GetUserByEmail(decodeEmail)
+	if decodeEmail == "" {
+		log.Println("error decode token:", "token tidak ditemukan")
+		return user.User{}, errors.New("data tidak valid")
+	}
+
+	result, err := s.model.GetUserByID(userID)
 	if err != nil {
 		return user.User{}, err
 	}
+
+	if result.Email != decodeEmail {
+		return user.User{}, errors.New("anda tidak diizinkan mengakses profil pengguna lainn")
+	}
+
 	return result, nil
 }
 
@@ -142,15 +152,46 @@ func (s *service) UpdateProfile(userID int, token *jwt.Token, newData user.User)
 		return errors.New("data tidak valid")
 	}
 
+	log.Print(email)
+
+	user, error := s.model.GetUserByID(uint(userID))
+	if error != nil {
+		log.Println("error getting user:", error.Error())
+		return error
+	}
+
+	if user.Email != email {
+		log.Println("error get account:", "user tidak sesuai")
+		return errors.New("user tidak sesuai")
+	}
+
 	err := s.v.Struct(&newData)
 	if err != nil {
 		log.Println("error validasi", err.Error())
 		return err
 	}
 
-	error := s.model.Update(userID, newData)
-	if error != nil {
-		log.Print("error update to model: ", error.Error())
+	// membuat map untuk menampung kolom yang akan diperbarui bersama dengan nilainya
+	updateFields := make(map[string]interface{})
+
+	// tentukan kolom yang ingin diperbarui dan tambahkan ke dalam map
+	if newData.Nama != "" {
+		updateFields["nama"] = newData.Nama
+	}
+	if newData.Email != "" {
+		updateFields["email"] = newData.Email
+	}
+	if newData.Tgl_lahir != "" {
+		updateFields["tgl_lahir"] = newData.Tgl_lahir
+	}
+	if newData.Picture != "" {
+		updateFields["picture"] = newData.Picture
+	}
+	updateFields["gender"] = newData.Gender
+
+	err = s.model.Update(userID, updateFields, email)
+	if err != nil {
+		log.Print("error update to model: ", err.Error())
 		return errors.New(helper.ServerGeneralError)
 	}
 
@@ -164,9 +205,20 @@ func (s *service) DeleteAccount(userID uint, token *jwt.Token) error {
 		return errors.New("data tidak valid")
 	}
 
-	error := s.model.Delete(userID)
+	user, err := s.model.GetUserByID(userID)
+	if err != nil {
+		log.Println("error getting user:", err.Error())
+		return err
+	}
+
+	if user.Email != email {
+		log.Println("error deleting account:", "user tidak sesuai")
+		return errors.New("user tidak sesuai")
+	}
+
+	error := s.model.Delete(userID, email)
 	if error != nil {
-		log.Print("error update to model: ", error.Error())
+		log.Print("error delete to model: ", error.Error())
 		return errors.New(helper.ServerGeneralError)
 	}
 

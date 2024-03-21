@@ -16,7 +16,7 @@ func InitRoute(c *echo.Echo, ct1 user.UserController) {
 func userRoute(c *echo.Echo, ct1 user.UserController) {
 	c.POST("/users", ct1.Add())
 	c.POST("/login", ct1.Login())
-	c.GET("/profile", ct1.Profile(), echojwt.WithConfig(echojwt.Config{
+	c.GET("/profile/:user_id", ct1.Profile(), echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte(config.JWTSECRET),
 	}))
 	c.PUT("/profile/:user_id", ct1.UpdateProfile(), echojwt.WithConfig(echojwt.Config{
