@@ -3,8 +3,10 @@ package config
 import (
 	"ALTA_BE_SOSMED/features/user/data"
 	"fmt"
+	"log"
 	"os"
 
+	// "github.com/cloudinary/cloudinary-go/v2"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -79,4 +81,36 @@ func InitSQL(c AppConfig) *gorm.DB {
 	db.AutoMigrate(&data.User{})
 
 	return db
+}
+
+func EnvCloudName() string {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+    return os.Getenv("CLOUDINARY_CLOUD_NAME")
+}
+
+func EnvCloudAPIKey() string {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+    return os.Getenv("CLOUDINARY_API_KEY")
+}
+
+func EnvCloudAPISecret() string {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+    return os.Getenv("CLOUDINARY_API_SECRET")
+}
+
+func EnvCloudUploadFolder() string {
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatal("Error loading .env file")
+    }
+    return os.Getenv("CLOUDINARY_UPLOAD_FOLDER")
 }

@@ -122,14 +122,16 @@ func (ct *controller) Profile() echo.HandlerFunc {
 				helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
 		}
 
-		// if result.UserID != int(userID) {
-		// 	// Jika bukan, kembalikan respons "forbidden"
-		// 	return c.JSON(http.StatusForbidden,
-		// 		helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
-		// }
+		var response ProfileResponse
+		response.UserID = result.UserID
+		response.Nama = result.Nama
+		response.Email = result.Email
+		response.Gender = result.Gender
+		response.Tgl_lahir = result.Tgl_lahir
+		response.Picture = result.Picture
 
 		return c.JSON(http.StatusOK,
-			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", result))
+			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", response))
 	}
 }
 
