@@ -26,9 +26,7 @@ func userRoute(c *echo.Echo, ct1 user.UserController) {
 }
 
 func comRoute(c *echo.Echo, ct comment.ComController) {
-	c.GET("/comment", ct.View(), echojwt.WithConfig(echojwt.Config{
-		SigningKey: []byte(config.JWTSECRET),
-	}))
+	c.GET("/comment", ct.View())
 	c.POST("/comment", ct.Add(), echojwt.WithConfig(echojwt.Config{
 		SigningKey: []byte(config.JWTSECRET),
 	}))
