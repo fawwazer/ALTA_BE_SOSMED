@@ -23,6 +23,7 @@ type UserService interface {
 	SaveUploadedFile(file *multipart.FileHeader, path string) error
 	UpdateProfile(userID int, token *jwt.Token, newData User) error
 	DeleteAccount(userID uint, token *jwt.Token) error
+	GetPicture(token *jwt.Token) (User, error)
 }
 
 type UserModel interface {
@@ -31,6 +32,7 @@ type UserModel interface {
 	Login(email string) (User, error)
 	GetUserByID(userID uint) (User, error)
 	GetLastUserID() (int, error)
+	GetPicture(email string) (User, error)
 	// Update(userID int, newData User) error
 	Update(userID int, updateFields map[string]interface{}, email string) error
 	Delete(userID uint, email string) error
@@ -57,5 +59,5 @@ type Register struct {
 	Email     string `validate:"required"`
 	Password  string `validate:"required,alphanum,min=8"`
 	Tgl_lahir string `validate:"required"`
-	Gender    bool   `validate:"required"`
+	Gender    bool
 }

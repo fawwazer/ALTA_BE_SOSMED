@@ -152,8 +152,6 @@ func (s *service) UpdateProfile(userID int, token *jwt.Token, newData user.User)
 		return errors.New("data tidak valid")
 	}
 
-	log.Print(email)
-
 	user, error := s.model.GetUserByID(uint(userID))
 	if error != nil {
 		log.Println("error getting user:", error.Error())
@@ -196,6 +194,22 @@ func (s *service) UpdateProfile(userID int, token *jwt.Token, newData user.User)
 	}
 
 	return nil
+}
+
+func (s *service) GetPicture(token *jwt.Token) (user.User, error) {
+	email := middlewares.DecodeToken(token)
+	if email == "" {
+		log.Println("error decode token:", "token tidak ditemukan")
+		return user.User{}, errors.New("data tidak valid")
+	}
+
+	result, err := s.model.GetPicture(email)
+	if err != nil {
+		log.Println("error getting user:", err.Error())
+		return user.User{}, err
+	}
+
+	return result, err
 }
 
 func (s *service) DeleteAccount(userID uint, token *jwt.Token) error {

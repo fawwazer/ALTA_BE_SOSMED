@@ -72,6 +72,14 @@ func (um *UserModel) GetLastUserID() (int, error) {
 	return lastUser.UserID, nil
 }
 
+func (um *UserModel) GetPicture(email string) (user.User, error) {
+	var result user.User
+	if err := um.Connection.Where("email = ?", email).First(&result).Error; err != nil {
+		return user.User{}, err
+	}
+	return result, nil
+}
+
 func (um *UserModel) Update(userID int, updateFields map[string]interface{}, email string) error {
 	var query = um.Connection.Model(&User{}).Where("user_id = ? AND email = ?", userID, email).Updates(updateFields)
 	if err := query.Error; err != nil {

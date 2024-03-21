@@ -5,3 +5,12 @@ type LoginResponse struct {
 	Nama  string `json:"nama"`
 	Token string `json:"token"`
 }
+
+type ProfileResponse struct {
+	UserID    int
+	Nama      string
+	Email     string
+	Picture   string
+	Tgl_lahir string
+	Gender    bool
+}

@@ -3,6 +3,7 @@ package handler
 import (
 	"ALTA_BE_SOSMED/features/user"
 	"ALTA_BE_SOSMED/helper"
+	"context"
 	"errors"
 
 	"log"
@@ -10,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cloudinary/cloudinary-go/v2"
+	"github.com/cloudinary/cloudinary-go/v2/api/uploader"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -122,14 +125,16 @@ func (ct *controller) Profile() echo.HandlerFunc {
 				helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
 		}
 
-		// if result.UserID != int(userID) {
-		// 	// Jika bukan, kembalikan respons "forbidden"
-		// 	return c.JSON(http.StatusForbidden,
-		// 		helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
-		// }
+		var response ProfileResponse
+		response.UserID = result.UserID
+		response.Nama = result.Nama
+		response.Email = result.Email
+		response.Gender = result.Gender
+		response.Tgl_lahir = result.Tgl_lahir
+		response.Picture = result.Picture
 
 		return c.JSON(http.StatusOK,
-			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", result))
+			helper.ResponseFormat(http.StatusOK, "berhasil mendapatkan data", response))
 	}
 }
 
@@ -155,64 +160,105 @@ func (ct *controller) UpdateProfile() echo.HandlerFunc {
 				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
 		}
 
-		var pictureURL string
-		if file != nil { // Check if file exists
-			// Define the file path to save the uploaded image.
-			pathImage := "/Users/rizal/Alterra/ALTA_BE_SOSMED/picture/" + file.Filename
+		// var pictureURL string
+		if file != nil { // Check if file nil
+			cld, err := cloudinary.NewFromURL("cloudinary://426244812151882:GBqN6L8Rm77iHHkPXiemVPP_e2Y@dlosajdpy")
+			if err != nil {
+				log.Print("error connect error: ", err.Error())
+				return err
+			}
+			resp, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
+			if err != nil {
+				log.Print("error upload error: ", err.Error())
+				return err
+			}
 
-			// Save the uploaded file to the specified path.
-			if err := ct.service.SaveUploadedFile(file, pathImage); err != nil {
-				log.Print("error save uploaded file: ", err.Error())
+			nama := c.FormValue("nama")
+			email := c.FormValue("email")
+			gender := c.FormValue("gender")
+			tgl_lahir := c.FormValue("tgl_lahir")
+
+			// convert string to bool
+			convertGender, err := strconv.ParseBool(gender)
+			if err != nil {
+				log.Print("err convert: ", err)
+			}
+
+			var updateProcess user.User
+			updateProcess.Nama = nama
+			updateProcess.Email = email
+			updateProcess.Gender = convertGender
+			updateProcess.Tgl_lahir = tgl_lahir
+
+			// log.Print(resp.SecureURL)
+			// var updateProcess user.User
+			if resp.SecureURL != "" { // Update picture only if URL is not empty
+				updateProcess.Picture = resp.SecureURL
+			}
+			if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
+				log.Println("error update account:", err.Error())
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return c.JSON(http.StatusNotFound,
+						helper.ResponseFormat(http.StatusNotFound, "data tidak ditemukan", nil))
+				}
+				// Jika terjadi kesalahan lain selain "record not found",
+				// kembalikan respons forbidden
+				log.Println("error update profile:", err.Error())
+				return c.JSON(http.StatusForbidden,
+					helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
+			}
+			return c.JSON(http.StatusOK,
+				helper.ResponseFormat(http.StatusOK, "Update Profile Success", nil))
+		} else if file == nil {
+			res, err := ct.service.GetPicture(token)
+			if err != nil {
 				return c.JSON(http.StatusInternalServerError,
 					helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
 			}
+			// var pictureURL string
+			// pictureURL := res.Picture
 
-			// Construct the URL for the saved picture.
-			baseURL := "http://localhost:8000"
-			pictureURL = baseURL + "/picture/" + file.Filename
-		}
+			nama := c.FormValue("nama")
+			email := c.FormValue("email")
+			gender := c.FormValue("gender")
+			tgl_lahir := c.FormValue("tgl_lahir")
 
-		nama := c.FormValue("nama")
-		email := c.FormValue("email")
-		gender := c.FormValue("gender")
-		tgl_lahir := c.FormValue("tgl_lahir")
-
-		log.Println(gender)
-
-		// convert string to bool
-		convertGender, err := strconv.ParseBool(gender)
-		if err != nil {
-			log.Print("err convert: ", err)
-		}
-
-		var updateProcess user.User
-		updateProcess.Nama = nama
-		updateProcess.Email = email
-		updateProcess.Gender = convertGender
-		updateProcess.Tgl_lahir = tgl_lahir
-
-		if pictureURL != "" { // Update picture only if URL is not empty
-			updateProcess.Picture = pictureURL
-		}
-
-		log.Println(updateProcess.Gender)
-
-		if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
-			log.Println("error update account:", err.Error())
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return c.JSON(http.StatusNotFound,
-					helper.ResponseFormat(http.StatusNotFound, "data tidak ditemukan", nil))
+			// convert string to bool
+			convertGender, err := strconv.ParseBool(gender)
+			if err != nil {
+				log.Print("err convert: ", err)
 			}
-			// Jika terjadi kesalahan lain selain "record not found",
-			// kembalikan respons forbidden
-			log.Println("error update profile:", err.Error())
-			return c.JSON(http.StatusForbidden,
-				helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
+
+			var updateProcess user.User
+			updateProcess.Nama = nama
+			updateProcess.Email = email
+			updateProcess.Gender = convertGender
+			updateProcess.Tgl_lahir = tgl_lahir
+			updateProcess.Picture = res.Picture
+
+			// if pictureURL != "" { // Update picture only if URL is not empty
+			// 	var updateProcess user.User
+			// 	updateProcess.Picture = pictureURL
+			// }
+
+			if err := ct.service.UpdateProfile(int(userId), token, updateProcess); err != nil {
+				log.Println("error update account:", err.Error())
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					return c.JSON(http.StatusNotFound,
+						helper.ResponseFormat(http.StatusNotFound, "data tidak ditemukan", nil))
+				}
+				// Jika terjadi kesalahan lain selain "record not found",
+				// kembalikan respons forbidden
+				log.Println("error update profile:", err.Error())
+				return c.JSON(http.StatusForbidden,
+					helper.ResponseFormat(http.StatusForbidden, "Anda tidak diizinkan mengakses profil pengguna lain", nil))
+			}
+
+			return c.JSON(http.StatusOK,
+				helper.ResponseFormat(http.StatusOK, "Update Profile Success", nil))
+
 		}
-
-		return c.JSON(http.StatusOK,
-			helper.ResponseFormat(http.StatusOK, "Update Profile Success", nil))
-
+		return nil
 	}
 }
 
