@@ -4,12 +4,15 @@ import (
 	"ALTA_BE_SOSMED/features/post"
 	"ALTA_BE_SOSMED/helper"
 	"ALTA_BE_SOSMED/middlewares"
+	"context"
 	"errors"
 	"io"
 	"log"
 	"mime/multipart"
 	"os"
 
+	"github.com/cloudinary/cloudinary-go"
+	"github.com/cloudinary/cloudinary-go/api/uploader"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -43,9 +46,20 @@ func (s *service) AddPost(pemilik *jwt.Token, postingBaru post.Post, file *multi
 
 	// Save the uploaded file if it exists
 	var pictureURL string
+	cld, err := cloudinary.NewFromURL("cloudinary://975476473639685:K7MSOZOWkrlRiX8rhm4ybiNRCkc@duwhyyuy8")
+	if err != nil {
+		log.Println("cloudinary connect error:", err.Error())
+		return post.Post{}, err
+	}
+	resp, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
+	if err != nil {
+		log.Println("cloudinary connect error:", err.Error())
+	}
+	log.Println(resp)
+	cloudinaryURL := resp.URL
 	if file != nil { // Check if file exists
 		// Define the file path to save the uploaded image.
-		pathImage := "/Users/user/ALTA_BE_SOSMED/picture" + file.Filename
+		pathImage := cloudinaryURL
 
 		// Save the uploaded file to the specified path.
 		if err := s.SaveUploadedFile(file, pathImage); err != nil {
@@ -54,8 +68,8 @@ func (s *service) AddPost(pemilik *jwt.Token, postingBaru post.Post, file *multi
 		}
 
 		// Construct the URL for the saved picture.
-		baseURL := "http://localhost:8000"
-		pictureURL = baseURL + "/picture/" + file.Filename
+		//baseURL := "http://localhost:8000"
+		pictureURL = cloudinaryURL
 	}
 
 	// Set the picture URL in the new post
