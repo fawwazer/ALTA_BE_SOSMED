@@ -44,36 +44,20 @@ func (s *service) AddPost(pemilik *jwt.Token, postingBaru post.Post, file *multi
 		return post.Post{}, err
 	}
 
-	// Save the uploaded file if it exists
-	var pictureURL string
+	// Upload image to Cloudinary
 	cld, err := cloudinary.NewFromURL("cloudinary://975476473639685:K7MSOZOWkrlRiX8rhm4ybiNRCkc@duwhyyuy8")
 	if err != nil {
 		log.Println("cloudinary connect error:", err.Error())
 		return post.Post{}, err
 	}
-	resp, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
+	uploadResp, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
 	if err != nil {
-		log.Println("cloudinary connect error:", err.Error())
-	}
-	log.Println(resp)
-	cloudinaryURL := resp.URL
-	if file != nil { // Check if file exists
-		// Define the file path to save the uploaded image.
-		pathImage := cloudinaryURL
-
-		// Save the uploaded file to the specified path.
-		if err := s.SaveUploadedFile(file, pathImage); err != nil {
-			log.Print("error save uploaded file: ", err.Error())
-			return post.Post{}, errors.New(helper.ServerGeneralError)
-		}
-
-		// Construct the URL for the saved picture.
-		//baseURL := "http://localhost:8000"
-		pictureURL = cloudinaryURL
+		log.Println("cloudinary upload error:", err.Error())
+		return post.Post{}, err
 	}
 
-	// Set the picture URL in the new post
-	postingBaru.Picture = pictureURL
+	// Set picture URL to Cloudinary image URL
+	postingBaru.Picture = uploadResp.URL
 
 	// Insert the new post into the database
 	result, err := s.m.InsertPost(email, postingBaru)

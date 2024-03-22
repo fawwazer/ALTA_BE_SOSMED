@@ -3,10 +3,10 @@ package handler
 import (
 	"ALTA_BE_SOSMED/features/post"
 	"ALTA_BE_SOSMED/helper"
+	"strings"
 
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v4"
@@ -24,59 +24,49 @@ func NewHandler(service post.PostService) post.PostController {
 
 func (ct *controller) Add() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		// Bind post data from request
 		var input PostRequest
 		err := c.Bind(&input)
 		if err != nil {
 			log.Println("error bind data:", err.Error())
-			if strings.Contains(err.Error(), "unsupport") {
-				return c.JSON(http.StatusUnsupportedMediaType,
-					helper.ResponseFormat(http.StatusUnsupportedMediaType, helper.UserInputFormatError, nil))
-			}
 			return c.JSON(http.StatusBadRequest,
 				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
 		}
 
+		// Retrieve JWT token from request context
 		token, ok := c.Get("user").(*jwt.Token)
 		if !ok {
+			return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+		}
+
+		// Retrieve uploaded image file from request
+		file, err := c.FormFile("picture")
+		if err != nil && err != http.ErrMissingFile {
+			log.Println("error form file:", err.Error())
 			return c.JSON(http.StatusBadRequest,
-				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! Please provide a valid picture file.", nil))
 		}
 
-		// Retrieve the uploaded file from the request.
-		file, err := c.FormFile("image")
-		if err != nil && err != http.ErrMissingFile { // Check if error is not due to missing file
-			log.Println("error form file: ", err.Error())
-			return c.JSON(http.StatusBadRequest,
-				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! The data type must be images!", nil))
+		// Check if file is nil or unsupported
+		if file == nil {
+			return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, "No file uploaded!", nil))
 		}
 
-		var pictureURL string
-		if file != nil { // Check if file exists
-			// Define the file path to save the uploaded image.
-			pathImage := "/Users/user/ALTA_BE_SOSMED/picture" + file.Filename
+		// Create new post object
+		var inputPost post.Post
+		inputPost.Posting = input.Posting
 
-			// Save the uploaded file to the specified path.
-			if err := ct.s.SaveUploadedFile(file, pathImage); err != nil {
-				log.Print("error save uploaded file: ", err.Error())
-				return c.JSON(http.StatusInternalServerError,
-					helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
-			}
-
-			// Construct the URL for the saved picture.
-			baseURL := "http://localhost:8000"
-			pictureURL = baseURL + "/picture/" + file.Filename
-		}
-
-		var inputProcess post.Post
-		inputProcess.Posting = input.Posting
-		inputProcess.Picture = pictureURL // Assign picture URL to post data
-
-		result, err := ct.s.AddPost(token, inputProcess, file)
+		// Call service to add post with Cloudinary file upload response
+		result, err := ct.s.AddPost(token, inputPost, file)
 		if err != nil {
 			log.Println("error insert db:", err.Error())
+			if strings.Contains(err.Error(), "unsupported file type") {
+				return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, "Unsupported file type! Please upload a valid image file.", nil))
+			}
 			return c.JSON(http.StatusInternalServerError, helper.ResponseFormat(http.StatusInternalServerError, helper.ServerGeneralError, nil))
 		}
 
+		// Return success response with newly added post
 		return c.JSON(http.StatusCreated, helper.ResponseFormat(http.StatusCreated, "berhasil menambahkan kegiatan", result))
 	}
 }
