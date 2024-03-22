@@ -6,10 +6,8 @@ import (
 	"ALTA_BE_SOSMED/middlewares"
 	"context"
 	"errors"
-	"io"
 	"log"
 	"mime/multipart"
-	"os"
 
 	"github.com/cloudinary/cloudinary-go"
 	"github.com/cloudinary/cloudinary-go/api/uploader"
@@ -20,6 +18,11 @@ import (
 type service struct {
 	m post.PostModel
 	v *validator.Validate
+}
+
+// SaveUploadedFile implements post.PostService.
+func (s *service) SaveUploadedFile(file *multipart.FileHeader, path string) error {
+	panic("unimplemented")
 }
 
 func NewPostService(model post.PostModel) post.PostService {
@@ -38,19 +41,13 @@ func (s *service) AddPost(pemilik *jwt.Token, postingBaru post.Post, file *multi
 	}
 
 	// Validate the new post data
-	err := s.v.Struct(&postingBaru)
-	if err != nil {
+	if err := s.v.Struct(&postingBaru); err != nil {
 		log.Println("error validasi", err.Error())
 		return post.Post{}, err
 	}
 
 	// Upload image to Cloudinary
-	cld, err := cloudinary.NewFromURL("cloudinary://975476473639685:K7MSOZOWkrlRiX8rhm4ybiNRCkc@duwhyyuy8")
-	if err != nil {
-		log.Println("cloudinary connect error:", err.Error())
-		return post.Post{}, err
-	}
-	uploadResp, err := cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
+	uploadResp, err := uploadToCloudinary(file)
 	if err != nil {
 		log.Println("cloudinary upload error:", err.Error())
 		return post.Post{}, err
@@ -68,28 +65,10 @@ func (s *service) AddPost(pemilik *jwt.Token, postingBaru post.Post, file *multi
 	return result, nil
 }
 
-func (s *service) SaveUploadedFile(file *multipart.FileHeader, path string) error {
-	// Open the uploaded file.
-	src, err := file.Open()
+func uploadToCloudinary(file *multipart.FileHeader) (*uploader.UploadResult, error) {
+	cld, err := cloudinary.NewFromURL("cloudinary://975476473639685:K7MSOZOWkrlRiX8rhm4ybiNRCkc@duwhyyuy8")
 	if err != nil {
-		log.Print("file open error :", err.Error())
-		return err
+		return nil, err
 	}
-	defer src.Close()
-
-	// Create a destination file for the uploaded content.
-	dst, err := os.Create(path)
-	if err != nil {
-		log.Print("file create error :", err.Error())
-		return err
-	}
-	defer dst.Close()
-
-	// Copy the uploaded content to the destination file.
-	if _, err = io.Copy(dst, src); err != nil {
-		log.Print("file copy error :", err.Error())
-		return err
-	}
-
-	return nil
+	return cld.Upload.Upload(context.Background(), file, uploader.UploadParams{})
 }

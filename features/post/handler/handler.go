@@ -26,11 +26,9 @@ func (ct *controller) Add() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Bind post data from request
 		var input PostRequest
-		err := c.Bind(&input)
-		if err != nil {
+		if err := c.Bind(&input); err != nil {
 			log.Println("error bind data:", err.Error())
-			return c.JSON(http.StatusBadRequest,
-				helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
+			return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, helper.UserInputError, nil))
 		}
 
 		// Retrieve JWT token from request context
@@ -43,21 +41,16 @@ func (ct *controller) Add() echo.HandlerFunc {
 		file, err := c.FormFile("picture")
 		if err != nil && err != http.ErrMissingFile {
 			log.Println("error form file:", err.Error())
-			return c.JSON(http.StatusBadRequest,
-				helper.ResponseFormat(http.StatusBadRequest, "Invalid data! Please provide a valid picture file.", nil))
+			return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, "Invalid data! Please provide a valid picture file.", nil))
 		}
 
-		// Check if file is nil or unsupported
+		// Check if file is nil
 		if file == nil {
 			return c.JSON(http.StatusBadRequest, helper.ResponseFormat(http.StatusBadRequest, "No file uploaded!", nil))
 		}
 
-		// Create new post object
-		var inputPost post.Post
-		inputPost.Posting = input.Posting
-
 		// Call service to add post with Cloudinary file upload response
-		result, err := ct.s.AddPost(token, inputPost, file)
+		result, err := ct.s.AddPost(token, post.Post{Posting: input.Posting}, file)
 		if err != nil {
 			log.Println("error insert db:", err.Error())
 			if strings.Contains(err.Error(), "unsupported file type") {
