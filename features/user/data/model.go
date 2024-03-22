@@ -1,9 +1,9 @@
 package data
 
 type User struct {
-	UserID    int `gorm:"primaryKey"`
+	UserID    int 
 	Nama      string
-	Email     string `gorm:"type:varchar(30);"`
+	Email     string `gorm:"type:varchar(30);primaryKey;"`
 	Password  string
 	Picture   string
 	Tgl_lahir string
